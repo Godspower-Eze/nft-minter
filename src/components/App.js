@@ -25,7 +25,7 @@ class App extends Component {
       "buffer":null,
       "networkId":"",
       "connected":false,
-      "contract":""
+      "contract":null
     }
   }
 
@@ -43,6 +43,7 @@ class App extends Component {
 
    submitFormData = async (event) => {
     event.preventDefault()
+    window.alert("Wait while your transaction is being processed. You will be redirected to your transaction page. Click OK to continue")
     let { cid } = await client.add(this.state.buffer)
     let hash = Object.values(Object.fromEntries(cid._baseCache))
     let url = `https://ipfs.infura.io/ipfs/${hash}`
@@ -55,6 +56,8 @@ class App extends Component {
       "image": url,
       "uuid":uuid
     }
+    let form = document.getElementById("form")
+    form.reset()
     fetch('https://nft-minter-api.herokuapp.com/api/add/', {
       method: 'POST', // or 'PUT'
       headers: {
@@ -67,11 +70,9 @@ class App extends Component {
       console.log(data)
       this.state.contract.methods.mintNFT(`https://nft-minter-api.herokuapp.com/api/get_data/${uuid}`).send({
         from:this.state.account
-      }).then(
-        (r)=>{
-          console.log(r)
-        }
-      )
+      }).on("transactionHash", function(hash){
+        window.open(`https://rinkeby.etherscan.io/tx/${hash}`, "_blank")
+      })
     })
     .catch((error) => {
       console.error('Error:', error);
@@ -117,6 +118,8 @@ class App extends Component {
     const renderMintButton = () => {
       if (window.ethereum && this.state.networkId !== 4) {
         return <input type='submit' value='Mint' disabled ></input>
+      }else if(this.state.connected === false){
+        return <input type='submit' value='Mint' disabled ></input>
       } else {
         return <input type='submit' value='Mint'></input>
       }
@@ -134,7 +137,7 @@ class App extends Component {
                 </a>
                 <h1>Your NFT Minter</h1>
                 <p><strong>Address:</strong> {this.state.account}</p>
-                <form onSubmit={this.submitFormData}> 
+                <form onSubmit={this.submitFormData} id="form"> 
                   <div>
                     <label for="name"><b>Name</b></label>:
                   </div>
